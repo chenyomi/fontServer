@@ -6,21 +6,20 @@
 
 从 [Releases](https://github.com/chenyomi/fontServer/releases) 下载对应版本：
 
-| 系统 | 文件 |
-| --- | --- |
-| Apple 芯片 Mac | `font-service-*-arm64-mac.dmg` |
-| Intel Mac | `font-service-*-x64-mac.dmg` |
-| Windows 64 位 | `font-service-setup-*.exe` |
+| 系统 | 文件 | 说明 |
+| --- | --- | --- |
+| Apple 芯片 Mac | `font-service-*-arm64-mac.pkg` | **推荐**，安装时自动去隔离 |
+| Intel Mac | `font-service-*-x64-mac.pkg` | **推荐**，安装时自动去隔离 |
+| Mac 拖拽安装 | `font-service-*-mac.dmg` / `.zip` | 首次启动自动去隔离 |
+| Windows 64 位 | `font-service-setup-*.exe` | |
 
 安装后默认在 `http://127.0.0.1:3838` 提供 API，开机自启。
 
 ### macOS「已损坏，无法打开」
 
-```bash
-xattr -cr "/Applications/FontServer.app"
-```
-
-或右键 → **打开** → **打开**（仅首次）。
+- **PKG**：安装器会在安装完成后自动执行 `xattr -cr`，无需手动操作
+- **DMG**：应用启动时会自动清除隔离属性；若仍打不开，右键 → **打开** → **打开**（仅首次）
+- 一劳永逸：配置 Apple 开发者证书做代码签名（见 ERP 项目 README）
 
 ## API
 

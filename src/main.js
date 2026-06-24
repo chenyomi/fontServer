@@ -1,8 +1,10 @@
 const { app } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const { clearMacQuarantine } = require("./mac-quarantine");
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
+clearMacQuarantine();
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {

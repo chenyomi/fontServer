@@ -40,6 +40,13 @@
       "category": "public.app-category.utilities",
       "target": [
         {
+          "target": "pkg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
           "target": "dmg",
           "arch": [
             "arm64",
@@ -60,6 +67,13 @@
     },
     "dmg": {
       "title": "FontServer-${version}-${arch}"
+    },
+    "pkg": {
+      "scripts": "build/pkg-scripts",
+      "installLocation": "/Applications",
+      "allowAnywhere": false,
+      "allowCurrentUserHome": false,
+      "artifactName": "${name}-${version}-${arch}-mac.${ext}"
     },
     "win": {
       "icon": "resources/icon.ico",

@@ -1,0 +1,7 @@
+#!/bin/bash
+# PKG 安装完成后自动清除隔离属性（需 root，由安装器调用）
+APP="/Applications/FontServer.app"
+if [ -d "$APP" ]; then
+  /usr/bin/xattr -cr "$APP" 2>/dev/null || true
+fi
+exit 0

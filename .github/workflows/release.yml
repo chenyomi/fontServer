@@ -70,6 +70,7 @@ jobs:
           name: installer-${{ matrix.platform }}
           path: |
             release/*.dmg
+            release/*.pkg
             release/*.zip
             release/*.exe
             release/*.yml
@@ -103,8 +104,9 @@ jobs:
 
           | 系统 | 附件 |
           | --- | --- |
-          | Apple 芯片 Mac (M1/M2/M3) | \`font-service-*-arm64-mac.dmg\` 或 \`.zip\` |
-          | Intel Mac | \`font-service-*-x64-mac.dmg\` 或 \`.zip\` |
+          | Apple 芯片 Mac (M1/M2/M3) | 推荐 \`font-service-*-arm64-mac.pkg\`（安装时自动去隔离） |
+          | Intel Mac | 推荐 \`font-service-*-x64-mac.pkg\` |
+          | 拖拽安装 | \`font-service-*-mac.dmg\` 或 \`.zip\`（首次启动会自动尝试去隔离） |
           | Windows 64 位 | \`font-service-setup-*.exe\` |
 
           ## 使用说明
@@ -116,15 +118,10 @@ jobs:
 
           可通过环境变量 \`FONT_SERVER_PORT\` 修改端口（默认 3838）。
 
-          ### macOS 提示「已损坏，无法打开」？
+          ### macOS「已损坏，无法打开」？
 
-          未签名应用在部分 macOS 版本会被拦截，终端执行：
-
-          \`\`\`bash
-          xattr -cr "/Applications/FontServer.app"
-          \`\`\`
-
-          或右键 app → **打开** → **打开**（仅首次）。
+          - **PKG 安装包**：安装完成后会自动执行 \`xattr -cr\`，一般无需手动操作
+          - **DMG 拖拽**：应用首次启动时会自动清除隔离属性；若仍无法打开，右键 → **打开** → **打开**（仅首次）
           EOF
 
       - name: Create GitHub Release

@@ -31,7 +31,7 @@ jobs:
         include:
           - os: macos-latest
             platform: mac
-            args: --mac --arm64 --x64
+            args: --mac dmg zip --arm64 --x64
           - os: windows-latest
             platform: win
             args: --win --x64
@@ -61,6 +61,10 @@ jobs:
           unset CSC_LINK CSC_KEY_PASSWORD WIN_CSC_LINK WIN_CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID || true
           export CSC_IDENTITY_AUTO_DISCOVERY=false
           npx electron-builder ${{ matrix.args }} --publish never
+          if [[ "${{ matrix.platform }}" == "mac" ]]; then
+            npx electron-builder --mac pkg --arm64 --publish never
+            npx electron-builder --mac pkg --x64 --publish never
+          fi
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 

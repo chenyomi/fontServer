@@ -1,0 +1,81 @@
+{
+  "name": "font-service",
+  "version": "1.1.1",
+  "description": "本地字体 HTTP 服务，供设计工具读取系统字体",
+  "author": "chenyomi <408550179@qq.com>",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "icons": "node scripts/generate-icons.cjs",
+    "build": "electron-builder",
+    "build:win": "npm run icons && electron-builder --win --x64",
+    "build:mac": "npm run icons && electron-builder --mac --arm64 --x64"
+  },
+  "dependencies": {
+    "express": "^4.22.1"
+  },
+  "devDependencies": {
+    "electron": "^32.3.3",
+    "electron-builder": "^24.13.3",
+    "sharp": "^0.33.5"
+  },
+  "build": {
+    "appId": "com.minge.fontserver",
+    "productName": "FontServer",
+    "copyright": "Copyright © chenyomi",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "resources/icon.icns",
+      "resources/icon.ico",
+      "resources/icon.png",
+      "package.json"
+    ],
+    "asar": true,
+    "mac": {
+      "icon": "resources/icon.icns",
+      "category": "public.app-category.utilities",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${name}-${version}-${arch}-mac.${ext}",
+      "identity": null,
+      "hardenedRuntime": false
+    },
+    "dmg": {
+      "title": "FontServer-${version}-${arch}"
+    },
+    "win": {
+      "icon": "resources/icon.ico",
+      "target": "nsis",
+      "artifactName": "${name}-setup-${version}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FontServer",
+      "runAfterFinish": true
+    }
+  }
+}

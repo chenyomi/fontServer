@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to build (e.g. v1.1.0)'
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Release tag to build (e.g. v1.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+            args: --mac --arm64 --x64
+          - os: windows-latest
+            platform: win
+            args: --win --x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts && npm rebuild sharp
+
+      - name: Generate icons
+        shell: bash
+        run: node scripts/generate-icons.cjs
+
+      - name: Package installer
+        shell: bash
+        run: |
+          unset CSC_LINK CSC_KEY_PASSWORD WIN_CSC_LINK WIN_CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID || true
+          export CSC_IDENTITY_AUTO_DISCOVERY=false
+          npx electron-builder ${{ matrix.args }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.platform }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.yml
+            release/*.blockmap
+          if-no-files-found: error
+
+  publish:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Prepare release notes
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          cat > release-notes.md <<EOF
+          ## 下载
+
+          | 系统 | 附件 |
+          | --- | --- |
+          | Apple 芯片 Mac (M1/M2/M3) | \`font-service-*-arm64-mac.dmg\` 或 \`.zip\` |
+          | Intel Mac | \`font-service-*-x64-mac.dmg\` 或 \`.zip\` |
+          | Windows 64 位 | \`font-service-setup-*.exe\` |
+
+          ## 使用说明
+
+          安装后应用会在后台静默运行，默认提供本地字体 HTTP 服务：
+
+          - 字体列表：\`http://localhost:3838/fonts\`
+          - 健康检查：\`http://localhost:3838/health\`
+
+          可通过环境变量 \`FONT_SERVER_PORT\` 修改端口（默认 3838）。
+
+          ### macOS 提示「已损坏，无法打开」？
+
+          未签名应用在部分 macOS 版本会被拦截，终端执行：
+
+          \`\`\`bash
+          xattr -cr "/Applications/FontServer.app"
+          \`\`\`
+
+          或右键 app → **打开** → **打开**（仅首次）。
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          generate_release_notes: false
+          append_body: false
+          body_path: release-notes.md
+          files: release-artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

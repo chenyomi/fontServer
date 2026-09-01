@@ -2,8 +2,8 @@
 
 本地字体 HTTP 服务（Electron 后台静默运行）：列出本机字体，并按文字裁剪成小体积 woff2/ttf，供设计工具、网页、画布使用。
 
-默认地址：`http://127.0.0.1:3838`  
-测试页：`http://127.0.0.1:3838/test`
+默认地址：`http://127.0.0.1:43838`  
+测试页：`http://127.0.0.1:43838/test`
 
 ## 下载安装
 
@@ -16,7 +16,9 @@
 | Mac 拖拽安装 | `font-service-*-mac.dmg` / `.zip` | 首次启动自动去隔离 |
 | Windows 64 位 | `font-service-setup-*.exe` | |
 
-安装后开机自启。可用 `FONT_SERVER_PORT` 改端口（默认 `3838`）。
+安装后默认在 `http://127.0.0.1:43838` 提供 API，开机自启。**打开应用会显示控制面板**（运行状态、开机自启、停止服务）；关闭窗口后仍在后台运行，可从菜单栏托盘再次打开。
+
+开发者自测裁剪：浏览器打开 `http://127.0.0.1:43838/test`（不面向普通用户展示）。
 
 ### macOS「已损坏，无法打开」
 
@@ -27,8 +29,8 @@
 ## 快速开始
 
 ```bash
-curl -s http://127.0.0.1:3838/health
-open http://127.0.0.1:3838/test   # 可视化：选字体、输入即预览
+curl -s http://127.0.0.1:43838/health
+open http://127.0.0.1:43838/test   # 可视化：选字体、输入即预览
 ```
 
 CSS 直链子集（推荐，二进制，不要默认 base64）：
@@ -36,7 +38,7 @@ CSS 直链子集（推荐，二进制，不要默认 base64）：
 ```css
 @font-face {
   font-family: "MyFont";
-  src: url("http://127.0.0.1:3838/subset?name=方正有猫在_GBK&text=你好世界设计&outType=woff2") format("woff2");
+  src: url("http://127.0.0.1:43838/subset?name=方正有猫在_GBK&text=你好世界设计&outType=woff2") format("woff2");
 }
 .title { font-family: "MyFont", "PingFang SC", sans-serif; }
 ```
@@ -69,10 +71,10 @@ CSS 直链子集（推荐，二进制，不要默认 base64）：
 ```bash
 # 二进制
 curl -s -o subset.woff2 \
-  "http://127.0.0.1:3838/subset?name=Arial&text=Hello你好&outType=woff2"
+  "http://127.0.0.1:43838/subset?name=Arial&text=Hello你好&outType=woff2"
 
 # JSON + base64（画布等无法用 URL 时）
-curl -s "http://127.0.0.1:3838/subset?name=Arial&text=Hello&encode=base64"
+curl -s "http://127.0.0.1:43838/subset?name=Arial&text=Hello&encode=base64"
 ```
 
 ```json
@@ -83,6 +85,7 @@ curl -s "http://127.0.0.1:3838/subset?name=Arial&text=Hello&encode=base64"
 
 - `.ttc` / `.otc` 暂不支持裁剪（HTTP 415）；`/fonts` 默认已过滤，需要完整列表用 `?all=1`
 - 响应头：`X-Cache`、`X-Timing-Find` / `Read` / `Subset` / `Total`
+- **HTTPS 页面**：已返回 `Access-Control-Allow-Private-Network: true`（Chrome 私有网络访问）。仍失败时确认 FontServer 已启动，或在该站点允许「不安全内容」
 - 环境变量：`SUBSET_CONCURRENCY`（默认 4）、`SUBSET_CACHE_MAX`（默认 64）
 
 ## Cursor Skill

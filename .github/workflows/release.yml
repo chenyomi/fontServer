@@ -117,10 +117,10 @@ jobs:
 
           安装后应用会在后台静默运行，默认提供本地字体 HTTP 服务：
 
-          - 字体列表：\`http://localhost:3838/fonts\`
-          - 健康检查：\`http://localhost:3838/health\`
+          - 字体列表：\`http://localhost:43838/fonts\`
+          - 健康检查：\`http://localhost:43838/health\`
 
-          可通过环境变量 \`FONT_SERVER_PORT\` 修改端口（默认 3838）。
+          可通过环境变量 \`FONT_SERVER_PORT\` 修改端口（默认 43838）。
 
           ### macOS「已损坏，无法打开」？
 

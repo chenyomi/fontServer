@@ -95,6 +95,12 @@ function cors(req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  // Chrome Private Network Access：HTTPS 页面请求 http://127.0.0.1 时预检需要此头
+  res.setHeader("Access-Control-Allow-Private-Network", "true");
+  res.setHeader(
+    "Access-Control-Expose-Headers",
+    "X-Cache, X-Timing-Find, X-Timing-Read, X-Timing-Subset, X-Timing-Total"
+  );
   if (req.method === "OPTIONS") {
     res.sendStatus(204);
     return;
@@ -111,16 +117,25 @@ function resolveFontPath(encodedPath) {
   return match ? match.path : null;
 }
 
+function isRunning() {
+  return serverInstance != null;
+}
+
 /**
  * 启动服务
  */
-function start(appInstance, port = 3838) {
+function start(appInstance, port = 43838) {
+  if (serverInstance) {
+    return serverInstance;
+  }
+
   const app = express();
   app.use(cors);
 
   app.get("/health", (req, res) => {
     res.json({
       status: "ok",
+      running: isRunning(),
       port,
       platform: process.platform,
       version: require("../package.json").version,
@@ -129,6 +144,10 @@ function start(appInstance, port = 3838) {
 
   app.get("/test", (req, res) => {
     res.sendFile(path.join(__dirname, "..", "public", "test.html"));
+  });
+
+  app.get("/panel", (req, res) => {
+    res.sendFile(path.join(__dirname, "..", "public", "panel.html"));
   });
 
   app.get("/fonts", (req, res) => {
@@ -259,13 +278,14 @@ function start(appInstance, port = 3838) {
   });
 
   app.get("/autostart", (req, res) => {
-    const settings = appInstance.getLoginItemSettings();
-    res.json({ enabled: settings.openAtLogin });
+    const { isAutostartEnabled } = require("./user-config");
+    res.json({ enabled: isAutostartEnabled() });
   });
 
   app.post("/autostart/:enable", (req, res) => {
+    const { applyAutostart } = require("./user-config");
     const enable = req.params.enable === "true";
-    appInstance.setLoginItemSettings({ openAtLogin: enable, path: process.execPath });
+    applyAutostart(enable);
     res.json({ success: true, enabled: enable });
   });
 
@@ -304,4 +324,4 @@ function stop() {
   });
 }
 
-module.exports = { start, stop, getSystemFonts };
+module.exports = { start, stop, isRunning, getSystemFonts };

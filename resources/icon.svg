@@ -2,11 +2,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4f46e5"/>
-      <stop offset="100%" stop-color="#7c3aed"/>
+      <stop offset="0%" stop-color="#4338ca"/>
+      <stop offset="50%" stop-color="#5b21b6"/>
+      <stop offset="100%" stop-color="#3b0764"/>
     </linearGradient>
+    <linearGradient id="shine" x1="0" y1="61.44" x2="0" y2="367.8208">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="45%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="602.1120000000001" x2="0" y2="962.56">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.28"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-10%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="20.48" stdDeviation="25.6" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <clipPath id="clip">
+      <rect x="61.44" y="61.44" width="901.12" height="901.12" rx="198.2464"/>
+    </clipPath>
   </defs>
-  <rect x="0" y="0" width="1024" height="1024" rx="184.32" fill="url(#bg)"/>
-  <text x="50%" y="58%" text-anchor="middle" dominant-baseline="middle"
-        font-family="Georgia, 'Times New Roman', serif" font-size="482.5088" fill="#ffffff">A</text>
+  <g filter="url(#shadow)">
+    <rect x="61.44" y="61.44" width="901.12" height="901.12" rx="198.2464" fill="url(#bg)"/>
+    <g clip-path="url(#clip)">
+      <rect x="61.44" y="61.44" width="901.12" height="901.12" fill="url(#shine)"/>
+      <rect x="61.44" y="557.056" width="901.12" height="405.504" fill="url(#shade)"/>
+    </g>
+    <rect x="61.44" y="61.44" width="901.12" height="901.12" rx="198.2464" fill="none"
+          stroke="#ffffff" stroke-opacity="0.26" stroke-width="12.288"/>
+    <rect x="76.1856" y="76.1856" width="871.6288" height="871.6288" rx="185.95839999999998"
+          fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="7.3728"/>
+  </g>
+  <text x="512" y="693.665792" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-size="504.6272000000001" fill="#ffffff"
+        style="paint-order:stroke fill" stroke="#ffffff" stroke-opacity="0.15" stroke-width="4.096">A</text>
 </svg>

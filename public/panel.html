@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>FontServer</title>
+  <style>
+    :root {
+      --bg: #f3f2f8;
+      --card: rgba(255, 255, 255, 0.86);
+      --card-solid: #ffffff;
+      --ink: #1d1d1f;
+      --ink-secondary: #6e6e73;
+      --line: rgba(0, 0, 0, 0.07);
+      --brand-start: #4f46e5;
+      --brand-end: #7c3aed;
+      --accent: #7c3aed;
+      --accent-2: #6d28d9;
+      --accent-soft: rgba(124, 58, 237, 0.14);
+      --accent-glow: rgba(124, 58, 237, 0.42);
+      --icon-shadow: rgba(79, 70, 229, 0.28);
+      --off-fill: rgba(0, 0, 0, 0.05);
+      --off-icon: #86868b;
+      --switch-off: #e9e9ea;
+      --switch-knob: #ffffff;
+      --seg-bg: rgba(0, 0, 0, 0.06);
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    [data-theme="dark"] {
+      --card: rgba(58, 58, 60, 0.55);
+      --card-solid: #2c2c2e;
+      --ink: #f5f5f7;
+      --ink-secondary: #98989d;
+      --line: rgba(255, 255, 255, 0.08);
+      --off-fill: rgba(255, 255, 255, 0.07);
+      --off-icon: #98989d;
+      --switch-off: #48484a;
+      --seg-bg: rgba(255, 255, 255, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: var(--font);
+      color: var(--ink);
+      background: var(--bg);
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.25s var(--ease), color 0.25s var(--ease);
+    }
+
+    .drag {
+      -webkit-app-region: drag;
+      height: 48px;
+      flex-shrink: 0;
+    }
+
+    .wrap {
+      height: calc(100% - 48px);
+      display: flex;
+      flex-direction: column;
+      padding: 8px 20px 24px;
+      gap: 8px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+    }
+
+    .hero,
+    .power-tile,
+    .power-caption,
+    .group-label,
+    .group,
+    .foot {
+      flex-shrink: 0;
+    }
+
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 0 2px;
+    }
+
+    .app-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px var(--icon-shadow);
+      object-fit: cover;
+    }
+
+    .hero-text { flex: 1; min-width: 0; }
+
+    .hero-text h1 {
+      margin: 0;
+      font-size: 1.0625rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-text .sub {
+      margin: 0;
+      font-size: 0.6875rem;
+      color: var(--ink-secondary);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px 4px 7px;
+      border-radius: 999px;
+      background: var(--off-fill);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: var(--ink-secondary);
+      flex-shrink: 0;
+      transition: background 0.3s var(--ease), color 0.3s var(--ease);
+    }
+
+    .status-pill .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--off-icon);
+      transition: background 0.3s var(--ease), box-shadow 0.3s var(--ease);
+    }
+
+    body.is-running .status-pill {
+      background: var(--accent-soft);
+      color: var(--accent-2);
+    }
+
+    body.is-running .status-pill .dot {
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent-glow);
+    }
+
+    .info-btn {
+      -webkit-app-region: no-drag;
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: none;
+      background: var(--off-fill);
+      color: var(--ink-secondary);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: "New York", Georgia, serif;
+      transition: background 0.2s var(--ease), color 0.2s var(--ease), transform 0.15s var(--ease-out);
+    }
+
+    .info-btn:hover { background: var(--accent-soft); color: var(--accent); }
+    .info-btn:active { transform: scale(0.9); }
+
+    .power-tile {
+      position: relative;
+      width: 100%;
+      border: none;
+      border-radius: 16px;
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--off-fill);
+      color: var(--ink);
+      overflow: hidden;
+      transition: transform 0.15s var(--ease-out);
+      -webkit-app-region: no-drag;
+    }
+
+    .power-tile::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--brand-start), var(--brand-end));
+      opacity: 0;
+      transition: opacity 0.4s var(--ease);
+    }
+
+    body.is-running .power-tile { color: #fff; }
+    body.is-running .power-tile::before { opacity: 1; }
+    .power-tile:active { transform: scale(0.97); }
+
+    .power-icon-wrap {
+      position: relative;
+      z-index: 1;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.06);
+      transition: background 0.4s var(--ease);
+    }
+
+    body.is-running .power-icon-wrap { background: rgba(255, 255, 255, 0.22); }
+
+    .power-icon-wrap svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--off-icon);
+      transition: stroke 0.3s var(--ease), transform 0.3s var(--ease-out);
+    }
+
+    body.is-running .power-icon-wrap svg { stroke: #fff; }
+    body.is-toggling .power-icon-wrap svg { transform: scale(0.75); }
+
+    .power-text { position: relative; z-index: 1; flex: 1; min-width: 0; }
+    .power-title { font-size: 0.9375rem; font-weight: 600; line-height: 1.25; }
+    .power-hint { margin-top: 1px; font-size: 0.75rem; opacity: 0.82; line-height: 1.3; }
+
+    .power-caption {
+      margin: 0 2px 2px;
+      font-size: 0.6875rem;
+      color: var(--ink-secondary);
+      opacity: 0.75;
+    }
+
+    .power-tile .burst {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    .power-tile .burst::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 38px;
+      width: 10px;
+      height: 10px;
+      margin: -5px 0 0 -5px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+    }
+
+    body.is-bursting .power-tile .burst::after {
+      animation: burst 0.6s var(--ease-out);
+    }
+
+    @keyframes burst {
+      0% { opacity: 0.55; transform: scale(0); }
+      100% { opacity: 0; transform: scale(22); }
+    }
+
+    .group-label {
+      margin: 2px 2px 0;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .group {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      min-height: 52px;
+    }
+
+    .row:first-child {
+      border-radius: 12px 12px 0 0;
+    }
+
+    .row:last-child {
+      border-radius: 0 0 12px 12px;
+    }
+
+    .row + .row { border-top: 1px solid var(--line); }
+    .row-main { flex: 1; min-width: 0; }
+    .row-title { font-size: 0.8438rem; font-weight: 500; }
+    .row-hint {
+      margin-top: 1px;
+      font-size: 0.71875rem;
+      color: var(--ink-secondary);
+      line-height: 1.35;
+    }
+
+    .row-hint.is-diag {
+      font-size: 0.6875rem;
+      line-height: 1.45;
+    }
+
+    .segmented {
+      display: inline-flex;
+      padding: 2px;
+      border-radius: 8px;
+      background: var(--seg-bg);
+      -webkit-app-region: no-drag;
+    }
+
+    .seg-btn {
+      border: none;
+      background: transparent;
+      color: var(--ink-secondary);
+      font: inherit;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      padding: 5px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s var(--ease), color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      white-space: nowrap;
+    }
+
+    .seg-btn.active {
+      background: var(--card-solid);
+      color: var(--ink);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .seg-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .swatches {
+      display: flex;
+      gap: 8px;
+      -webkit-app-region: no-drag;
+    }
+
+    .swatch {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      background: var(--swatch-color);
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.15s var(--ease-out), border-color 0.2s var(--ease);
+    }
+
+    .swatch:hover { transform: scale(1.08); }
+    .swatch.active { border-color: var(--ink); box-shadow: 0 0 0 2px var(--card-solid); }
+    .swatch:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .switch {
+      position: relative;
+      width: 42px;
+      height: 25px;
+      flex-shrink: 0;
+      -webkit-app-region: no-drag;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+    .switch-track {
+      position: absolute;
+      inset: 0;
+      background: var(--switch-off);
+      border-radius: 999px;
+      transition: background 0.25s var(--ease);
+      cursor: pointer;
+    }
+
+    .switch-track::after {
+      content: "";
+      position: absolute;
+      width: 21px;
+      height: 21px;
+      left: 2px;
+      top: 2px;
+      background: var(--switch-knob);
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: transform 0.25s var(--ease);
+    }
+
+    .switch input:checked + .switch-track { background: var(--accent); }
+    .switch input:checked + .switch-track::after { transform: translateX(17px); }
+    .switch input:disabled + .switch-track { opacity: 0.4; cursor: not-allowed; }
+
+    .test-btn {
+      -webkit-app-region: no-drag;
+      flex-shrink: 0;
+      min-width: 52px;
+      height: 28px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--card-solid);
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s var(--ease), border-color 0.2s var(--ease), opacity 0.2s var(--ease), transform 0.15s var(--ease-out);
+    }
+
+    .test-btn:hover:not(:disabled) {
+      background: var(--accent-soft);
+      border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+    }
+
+    .test-btn:active:not(:disabled) { transform: scale(0.96); }
+    .test-btn:disabled { opacity: 0.45; cursor: not-allowed; color: var(--ink-secondary); }
+    .test-btn.is-ok { border-color: color-mix(in srgb, var(--accent) 35%, transparent); background: var(--accent-soft); }
+    .test-btn.is-fail { border-color: rgba(255, 69, 58, 0.35); color: #ff453a; background: rgba(255, 69, 58, 0.1); }
+
+    .foot {
+      padding: 10px 0 4px;
+      flex-shrink: 0;
+      font-size: 0.66875rem;
+      color: var(--ink-secondary);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .foot .site {
+      color: inherit;
+      text-decoration: none;
+      opacity: 0.9;
+      border-bottom: 1px solid transparent;
+      transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+    }
+
+    .foot .site:hover {
+      color: var(--accent);
+      border-bottom-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%) translateY(8px) scale(0.98);
+      opacity: 0;
+      background: var(--card-solid);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      padding: 7px 14px;
+      border-radius: 9px;
+      font-size: 0.8125rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      transition: opacity 0.22s var(--ease), transform 0.22s var(--ease-out);
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+  </style>
+</head>
+<body>
+  <div class="drag"></div>
+  <div class="wrap">
+    <header class="hero">
+      <img class="app-icon" src="../resources/icon.png" width="38" height="38" alt="" />
+      <div class="hero-text">
+        <h1>FontServer</h1>
+        <p class="sub" id="subTitle">本地字体服务</p>
+      </div>
+      <span class="status-pill" id="statusPill"><span class="dot"></span><span id="statusPillText">—</span></span>
+      <button class="info-btn" id="infoBtn" type="button" aria-label="关于">i</button>
+    </header>
+
+    <button class="power-tile" id="powerTile" type="button" aria-pressed="false">
+      <span class="burst" aria-hidden="true"></span>
+      <span class="power-icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v9" /><path d="M18.4 6.6a9 9 0 1 1-12.8 0" />
+        </svg>
+      </span>
+      <span class="power-text">
+        <span class="power-title" id="powerTitle">本地服务</span>
+        <span class="power-hint" id="powerHint">—</span>
+      </span>
+    </button>
+    <p class="power-caption" id="powerCaption">轻点卡片可开启或关闭服务</p>
+
+    <p class="group-label" id="labelGeneral">通用</p>
+    <section class="group" aria-label="General">
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title" id="testTitle">连接诊断</div>
+          <div class="row-hint" id="testHint">测试 API 连通性并检查字体列表</div>
+        </div>
+        <button class="test-btn" id="testBtn" type="button">测试</button>
+      </div>
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title" id="autostartTitle">登录时打开</div>
+          <div class="row-hint" id="autostartHint">开机后在后台自动运行</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="autostartToggle" />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+    </section>
+
+    <p class="group-label" id="labelAppearance">外观</p>
+    <section class="group" aria-label="Appearance">
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title" id="appearanceTitle">外观模式</div>
+          <div class="row-hint" id="appearanceHint">跟随系统或固定浅色/深色</div>
+        </div>
+        <div class="segmented" id="appearanceSeg">
+          <button type="button" class="seg-btn" data-value="system">自动</button>
+          <button type="button" class="seg-btn" data-value="light">浅色</button>
+          <button type="button" class="seg-btn" data-value="dark">深色</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title" id="languageTitle">语言</div>
+          <div class="row-hint" id="languageHint">界面显示语言</div>
+        </div>
+        <div class="segmented" id="languageSeg">
+          <button type="button" class="seg-btn" data-value="zh">CN</button>
+          <button type="button" class="seg-btn" data-value="en">EN</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title" id="accentTitle">主题色</div>
+          <div class="row-hint" id="accentHint">按钮与高亮颜色</div>
+        </div>
+        <div class="swatches" id="accentSwatches">
+          <button type="button" class="swatch" data-accent="purple" style="--swatch-color:#7c3aed" aria-label="Purple"></button>
+          <button type="button" class="swatch" data-accent="blue" style="--swatch-color:#3b82f6" aria-label="Blue"></button>
+          <button type="button" class="swatch" data-accent="teal" style="--swatch-color:#14b8a6" aria-label="Teal"></button>
+          <button type="button" class="swatch" data-accent="rose" style="--swatch-color:#f43f5e" aria-label="Rose"></button>
+        </div>
+      </div>
+    </section>
+
+    <p class="foot">
+      <span id="footHint">关闭窗口后仍在菜单栏运行</span>
+      <br />
+      <a class="site" href="https://www.scipixa.com" target="_blank" rel="noopener">www.scipixa.com</a>
+      · <span id="versionLine">—</span>
+    </p>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const I18N = {
+      zh: {
+        subTitle: "本地字体服务",
+        about: "关于 FontServer",
+        localService: "本地服务",
+        runningTapOff: "运行中 · 轻点关闭",
+        stoppedTapOn: "已停止 · 轻点开启",
+        running: "运行中",
+        stopped: "已停止",
+        powerCaption: "轻点卡片可开启或关闭服务",
+        labelGeneral: "通用",
+        labelAppearance: "外观",
+        testTitle: "连接诊断",
+        testHint: "测试 API 连通性并检查字体列表",
+        testHintPort: (port) => `点击测试 · 127.0.0.1:${port}`,
+        testHintOff: "请先开启本地服务",
+        testHintTesting: "正在诊断…",
+        testBtn: "测试",
+        diagHealth: "API",
+        diagFonts: "字体",
+        diagAutostart: "自启",
+        diagOn: "开",
+        diagOff: "关",
+        diagPass: (ms) => `诊断通过 · ${ms}ms`,
+        diagPartial: "部分项目未通过",
+        diagFail: "诊断未通过",
+        autostartTitle: "登录时打开",
+        autostartHint: "开机后在后台自动运行",
+        appearanceTitle: "外观模式",
+        appearanceHint: "跟随系统或固定浅色/深色",
+        appearanceAuto: "自动",
+        appearanceLight: "浅色",
+        appearanceDark: "深色",
+        languageTitle: "语言",
+        languageHint: "界面显示语言",
+        accentTitle: "主题色",
+        accentHint: "按钮与高亮颜色",
+        footHint: "关闭窗口后仍在菜单栏运行",
+        toastStarted: "服务已启动",
+        toastStopped: "服务已停止",
+        toastFailed: "操作失败",
+        toastAutostartOn: "已开启登录时打开",
+        toastAutostartOff: "已关闭登录时打开",
+        toastSettingsFailed: "设置失败",
+        toastTestOk: "诊断通过",
+        toastTestFail: (msg) => msg,
+        toastTestRetry: "诊断失败，请重试",
+        toastPrefSaved: "设置已保存",
+        loadError: "请从 FontServer 应用打开",
+        stateError: "无法读取状态",
+        testCodes: {
+          service_stopped: "服务未运行，请先开启本地服务",
+          partial: "部分诊断项未通过",
+          unreachable: "无法连接本地服务",
+        },
+      },
+      en: {
+        subTitle: "Local Font Service",
+        about: "About FontServer",
+        localService: "Local Service",
+        runningTapOff: "Running · tap to stop",
+        stoppedTapOn: "Stopped · tap to start",
+        running: "Running",
+        stopped: "Stopped",
+        powerCaption: "Tap the tile to start or stop the service",
+        labelGeneral: "General",
+        labelAppearance: "Appearance",
+        testTitle: "Diagnostics",
+        testHint: "Test API connectivity and font listing",
+        testHintPort: (port) => `Tap test · 127.0.0.1:${port}`,
+        testHintOff: "Start the local service first",
+        testHintTesting: "Running diagnostics…",
+        testBtn: "Test",
+        diagHealth: "API",
+        diagFonts: "Fonts",
+        diagAutostart: "Autostart",
+        diagOn: "On",
+        diagOff: "Off",
+        diagPass: (ms) => `All passed · ${ms}ms`,
+        diagPartial: "Some checks failed",
+        diagFail: "Diagnostics failed",
+        autostartTitle: "Open at Login",
+        autostartHint: "Run in background after startup",
+        appearanceTitle: "Appearance",
+        appearanceHint: "Follow system or use light/dark",
+        appearanceAuto: "Auto",
+        appearanceLight: "Light",
+        appearanceDark: "Dark",
+        languageTitle: "Language",
+        languageHint: "Interface language",
+        accentTitle: "Accent Color",
+        accentHint: "Buttons and highlights",
+        footHint: "Keeps running in the menu bar after closing",
+        toastStarted: "Service started",
+        toastStopped: "Service stopped",
+        toastFailed: "Operation failed",
+        toastAutostartOn: "Open at login enabled",
+        toastAutostartOff: "Open at login disabled",
+        toastSettingsFailed: "Failed to save settings",
+        toastTestOk: "Diagnostics passed",
+        toastTestFail: (msg) => msg,
+        toastTestRetry: "Diagnostics failed, try again",
+        toastPrefSaved: "Settings saved",
+        loadError: "Open from the FontServer app",
+        stateError: "Unable to read state",
+        testCodes: {
+          service_stopped: "Service is off. Start it first.",
+          partial: "Some diagnostic checks failed",
+          unreachable: "Cannot reach local service",
+        },
+      },
+    };
+
+    const SWATCH_COLORS = { purple: "#7c3aed", blue: "#3b82f6", teal: "#14b8a6", rose: "#f43f5e" };
+
+    const powerTile = document.getElementById("powerTile");
+    const powerHint = document.getElementById("powerHint");
+    const statusPillText = document.getElementById("statusPillText");
+    const autostartToggle = document.getElementById("autostartToggle");
+    const testBtn = document.getElementById("testBtn");
+    const testHint = document.getElementById("testHint");
+    const versionLine = document.getElementById("versionLine");
+    const toast = document.getElementById("toast");
+    const appearanceSeg = document.getElementById("appearanceSeg");
+    const languageSeg = document.getElementById("languageSeg");
+    const accentSwatches = document.getElementById("accentSwatches");
+    const infoBtn = document.getElementById("infoBtn");
+
+    let busy = false;
+    let currentRunning = null;
+    let currentState = null;
+    let lang = "en";
+
+    function t(key, ...args) {
+      const pack = I18N[lang] || I18N.en;
+      const val = pack[key];
+      return typeof val === "function" ? val(...args) : val;
+    }
+
+    function testMessage(result) {
+      const pack = I18N[lang] || I18N.en;
+      if (result.ok) return t("diagPass", result.ms);
+      if (result.code === "partial") return pack.testCodes.partial;
+      return pack.testCodes[result.code] || pack.testCodes.unreachable;
+    }
+
+    function formatDiagnostic(result) {
+      if (!result.checks?.length) return testMessage(result);
+
+      const parts = result.checks.map((check) => {
+        if (check.id === "health") {
+          return check.ok ? `✓ ${t("diagHealth")} ${check.ms}ms` : `✗ ${t("diagHealth")}`;
+        }
+        if (check.id === "fonts") {
+          return check.ok ? `✓ ${t("diagFonts")} ${check.count}` : `✗ ${t("diagFonts")}`;
+        }
+        if (check.id === "autostart") {
+          const onOff = check.enabled ? t("diagOn") : t("diagOff");
+          return `${t("diagAutostart")} ${onOff}`;
+        }
+        return "";
+      }).filter(Boolean);
+
+      return parts.join(" · ");
+    }
+
+    function applyAccent(theme, darkMode) {
+      if (!theme) return;
+      document.documentElement.style.setProperty("--bg", darkMode ? theme.bgDark : theme.bgLight);
+      document.documentElement.style.setProperty("--brand-start", theme.start);
+      document.documentElement.style.setProperty("--brand-end", theme.end);
+      document.documentElement.style.setProperty("--accent", theme.accent);
+      document.documentElement.style.setProperty("--accent-2", theme.accent2);
+      document.documentElement.style.setProperty("--accent-soft", darkMode ? theme.softDark : theme.softLight);
+      document.documentElement.style.setProperty("--accent-glow", darkMode ? theme.glowDark : theme.glowLight);
+      document.documentElement.style.setProperty("--icon-shadow", theme.shadow);
+    }
+
+    function applyTheme(darkMode) {
+      document.documentElement.dataset.theme = darkMode ? "dark" : "light";
+    }
+
+    function renderI18n() {
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.getElementById("subTitle").textContent = t("subTitle");
+      document.getElementById("powerTitle").textContent = t("localService");
+      document.getElementById("powerCaption").textContent = t("powerCaption");
+      document.getElementById("labelGeneral").textContent = t("labelGeneral");
+      document.getElementById("labelAppearance").textContent = t("labelAppearance");
+      document.getElementById("testTitle").textContent = t("testTitle");
+      document.getElementById("autostartTitle").textContent = t("autostartTitle");
+      document.getElementById("autostartHint").textContent = t("autostartHint");
+      document.getElementById("appearanceTitle").textContent = t("appearanceTitle");
+      document.getElementById("appearanceHint").textContent = t("appearanceHint");
+      document.getElementById("languageTitle").textContent = t("languageTitle");
+      document.getElementById("languageHint").textContent = t("languageHint");
+      document.getElementById("accentTitle").textContent = t("accentTitle");
+      document.getElementById("accentHint").textContent = t("accentHint");
+      document.getElementById("footHint").textContent = t("footHint");
+      testBtn.textContent = t("testBtn");
+      infoBtn.setAttribute("aria-label", t("about"));
+      infoBtn.title = t("about");
+
+      appearanceSeg.querySelector('[data-value="system"]').textContent = t("appearanceAuto");
+      appearanceSeg.querySelector('[data-value="light"]').textContent = t("appearanceLight");
+      appearanceSeg.querySelector('[data-value="dark"]').textContent = t("appearanceDark");
+    }
+
+    function setSegmentActive(group, value) {
+      group.querySelectorAll(".seg-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.value === value);
+      });
+    }
+
+    function setSwatchActive(accent) {
+      accentSwatches.querySelectorAll(".swatch").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.accent === accent);
+      });
+    }
+
+    function setControlsDisabled(disabled) {
+      powerTile.disabled = disabled;
+      autostartToggle.disabled = disabled;
+      testBtn.disabled = disabled || !currentRunning;
+      appearanceSeg.querySelectorAll(".seg-btn").forEach((b) => { b.disabled = disabled; });
+      languageSeg.querySelectorAll(".seg-btn").forEach((b) => { b.disabled = disabled; });
+      accentSwatches.querySelectorAll(".swatch").forEach((b) => { b.disabled = disabled; });
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove("show"), 1600);
+    }
+
+    function burstOnce() {
+      document.body.classList.remove("is-bursting");
+      void powerTile.offsetWidth;
+      document.body.classList.add("is-bursting");
+      clearTimeout(burstOnce._t);
+      burstOnce._t = setTimeout(() => document.body.classList.remove("is-bursting"), 650);
+    }
+
+    function applyState(state, { animate = false } = {}) {
+      currentState = state;
+      lang = state.language || "en";
+      renderI18n();
+
+      applyTheme(state.darkMode);
+      applyAccent(state.accentTheme, state.darkMode);
+
+      const changed = currentRunning !== null && currentRunning !== state.running;
+      currentRunning = state.running;
+
+      document.body.classList.toggle("is-running", !!state.running);
+      powerTile.setAttribute("aria-pressed", String(!!state.running));
+      autostartToggle.checked = !!state.autostart;
+
+      setSegmentActive(appearanceSeg, state.appearance || "system");
+      setSegmentActive(languageSeg, state.language || "en");
+      setSwatchActive(state.accent || "purple");
+
+      powerHint.textContent = state.running ? t("runningTapOff") : t("stoppedTapOn");
+      statusPillText.textContent = state.running ? t("running") : t("stopped");
+      versionLine.textContent = `v${state.version}`;
+
+      if (!state.running) {
+        testBtn.classList.remove("is-ok", "is-fail");
+        if (testHint.dataset.testing !== "1") testHint.textContent = t("testHintOff");
+      } else if (testHint.dataset.testing !== "1") {
+        testHint.textContent = t("testHintPort", state.port || 43838);
+      }
+
+      setControlsDisabled(busy);
+      if (animate && changed) burstOnce();
+    }
+
+    async function withBusy(fn) {
+      busy = true;
+      document.body.classList.add("is-toggling");
+      setControlsDisabled(true);
+      try {
+        return await fn();
+      } finally {
+        busy = false;
+        document.body.classList.remove("is-toggling");
+        setControlsDisabled(false);
+      }
+    }
+
+    async function savePreferences(prefs, toastMsg) {
+      await withBusy(async () => {
+        try {
+          const next = await window.fontServer.setPreferences(prefs);
+          applyState(next);
+          showToast(toastMsg || t("toastPrefSaved"));
+        } catch {
+          if (currentState) applyState(currentState);
+          showToast(t("toastSettingsFailed"));
+        }
+      });
+    }
+
+    powerTile.addEventListener("click", async () => {
+      const want = !currentRunning;
+      await withBusy(async () => {
+        try {
+          const next = await window.fontServer.setService(want);
+          applyState(next, { animate: true });
+          showToast(want ? t("toastStarted") : t("toastStopped"));
+        } catch {
+          showToast(t("toastFailed"));
+        }
+      });
+    });
+
+    autostartToggle.addEventListener("change", async () => {
+      const want = autostartToggle.checked;
+      await withBusy(async () => {
+        try {
+          const next = await window.fontServer.setAutostart(want);
+          applyState(next);
+          showToast(want ? t("toastAutostartOn") : t("toastAutostartOff"));
+        } catch {
+          autostartToggle.checked = !want;
+          showToast(t("toastSettingsFailed"));
+        }
+      });
+    });
+
+    testBtn.addEventListener("click", async () => {
+      if (!window.fontServer?.testConnection) return;
+
+      testBtn.disabled = true;
+      testBtn.classList.remove("is-ok", "is-fail");
+      testBtn.textContent = "…";
+      testHint.dataset.testing = "1";
+      testHint.textContent = t("testHintTesting");
+
+      try {
+        const result = await window.fontServer.testConnection();
+        testBtn.textContent = t("testBtn");
+        testBtn.classList.toggle("is-ok", !!result.ok);
+        testBtn.classList.toggle("is-fail", !result.ok);
+        testHint.classList.add("is-diag");
+        testHint.textContent = formatDiagnostic(result);
+        showToast(result.ok ? t("toastTestOk") : t("toastTestFail", testMessage(result)));
+      } catch {
+        testBtn.textContent = t("testBtn");
+        testBtn.classList.add("is-fail");
+        testHint.textContent = t("toastTestRetry");
+        showToast(t("toastTestRetry"));
+      } finally {
+        delete testHint.dataset.testing;
+        testBtn.disabled = busy || !currentRunning;
+      }
+    });
+
+    appearanceSeg.addEventListener("click", (e) => {
+      const btn = e.target.closest(".seg-btn");
+      if (!btn || btn.disabled || !currentState) return;
+      const value = btn.dataset.value;
+      if (value === currentState.appearance) return;
+      savePreferences({ appearance: value });
+    });
+
+    languageSeg.addEventListener("click", (e) => {
+      const btn = e.target.closest(".seg-btn");
+      if (!btn || btn.disabled || !currentState) return;
+      const value = btn.dataset.value;
+      if (value === currentState.language) return;
+      savePreferences({ language: value });
+    });
+
+    accentSwatches.addEventListener("click", (e) => {
+      const btn = e.target.closest(".swatch");
+      if (!btn || btn.disabled || !currentState) return;
+      const value = btn.dataset.accent;
+      if (value === currentState.accent) return;
+      savePreferences({ accent: value });
+    });
+
+    infoBtn.addEventListener("click", () => {
+      window.fontServer?.showAbout?.();
+    });
+
+    async function init() {
+      if (!window.fontServer) {
+        powerHint.textContent = I18N.en.loadError;
+        return;
+      }
+      try {
+        const state = await window.fontServer.getState();
+        applyState(state);
+        window.fontServer.onStateChange((s) => applyState(s, { animate: true }));
+      } catch {
+        powerHint.textContent = I18N.en.stateError;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

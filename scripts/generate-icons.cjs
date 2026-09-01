@@ -16,26 +16,79 @@ const root = path.resolve(__dirname, '..');
 const resourcesDir = path.join(root, 'resources');
 const iconsetDir = path.join(resourcesDir, 'icon.iconset');
 
-function iconSvg(size) {
+/** Dock / 应用图标：紫色渐变 + 边缘高光，接近 macOS 图标立体感 */
+function appIconSvg(size) {
   const s = size;
-  const pad = s * 0.12;
+  const pad = s * 0.06;
   const inner = s - pad * 2;
+  const cx = s / 2;
+  const cy = s / 2;
+  const fontSize = inner * 0.56;
+  const baselineY = cy + fontSize * 0.36;
+  const rx = inner * 0.22;
+  const strokeW = Math.max(1, s * 0.012);
+  const glossH = inner * 0.34;
   return Buffer.from(`<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4f46e5"/>
-      <stop offset="100%" stop-color="#7c3aed"/>
+      <stop offset="0%" stop-color="#4338ca"/>
+      <stop offset="50%" stop-color="#5b21b6"/>
+      <stop offset="100%" stop-color="#3b0764"/>
     </linearGradient>
+    <linearGradient id="shine" x1="0" y1="${pad}" x2="0" y2="${pad + glossH}">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="45%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="${pad + inner * 0.6}" x2="0" y2="${pad + inner}">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.28"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-10%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="${Math.max(1, s * 0.02)}" stdDeviation="${Math.max(1, s * 0.025)}" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <clipPath id="clip">
+      <rect x="${pad}" y="${pad}" width="${inner}" height="${inner}" rx="${rx}"/>
+    </clipPath>
   </defs>
-  <rect x="0" y="0" width="${s}" height="${s}" rx="${s * 0.18}" fill="url(#bg)"/>
-  <text x="50%" y="58%" text-anchor="middle" dominant-baseline="middle"
-        font-family="Georgia, 'Times New Roman', serif" font-size="${inner * 0.62}" fill="#ffffff">A</text>
+  <g filter="url(#shadow)">
+    <rect x="${pad}" y="${pad}" width="${inner}" height="${inner}" rx="${rx}" fill="url(#bg)"/>
+    <g clip-path="url(#clip)">
+      <rect x="${pad}" y="${pad}" width="${inner}" height="${inner}" fill="url(#shine)"/>
+      <rect x="${pad}" y="${pad + inner * 0.55}" width="${inner}" height="${inner * 0.45}" fill="url(#shade)"/>
+    </g>
+    <rect x="${pad}" y="${pad}" width="${inner}" height="${inner}" rx="${rx}" fill="none"
+          stroke="#ffffff" stroke-opacity="0.26" stroke-width="${strokeW}"/>
+    <rect x="${pad + strokeW * 1.2}" y="${pad + strokeW * 1.2}" width="${inner - strokeW * 2.4}" height="${inner - strokeW * 2.4}" rx="${rx - strokeW}"
+          fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="${strokeW * 0.6}"/>
+  </g>
+  <text x="${cx}" y="${baselineY}" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-size="${fontSize}" fill="#ffffff"
+        style="paint-order:stroke fill" stroke="#ffffff" stroke-opacity="0.15" stroke-width="${Math.max(0.5, s * 0.004)}">A</text>
 </svg>`);
 }
 
-async function png(size) {
-  return sharp(iconSvg(size))
+/** 菜单栏托盘：白底黑字，小尺寸更清晰 */
+function trayIconSvg(size) {
+  const s = size;
+  const pad = s * 0.06;
+  const inner = s - pad * 2;
+  const cx = s / 2;
+  const cy = s / 2;
+  const fontSize = inner * 0.58;
+  const baselineY = cy + fontSize * 0.36;
+  const rx = inner * 0.2;
+  return Buffer.from(`<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
+  <rect x="${pad}" y="${pad}" width="${inner}" height="${inner}" rx="${rx}" fill="#ffffff" stroke="#d1d1d6" stroke-width="${Math.max(1, s * 0.04)}"/>
+  <text x="${cx}" y="${baselineY}" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-size="${fontSize}" font-weight="600" fill="#1d1d1f">A</text>
+</svg>`);
+}
+
+async function pngFromSvg(svgBuffer, size) {
+  return sharp(svgBuffer)
     .resize(size, size)
     .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toBuffer();
@@ -89,7 +142,7 @@ async function buildMacIcns() {
   fs.mkdirSync(iconsetDir, { recursive: true });
 
   for (const [name, size] of iconsetFiles) {
-    fs.writeFileSync(path.join(iconsetDir, name), await png(size));
+    fs.writeFileSync(path.join(iconsetDir, name), await pngFromSvg(appIconSvg(size), size));
   }
 
   execFileSync('iconutil', ['-c', 'icns', iconsetDir, '-o', path.join(resourcesDir, 'icon.icns')], {
@@ -101,15 +154,17 @@ async function buildIco() {
   const sizes = [16, 32, 48, 64, 128, 256];
   const entries = [];
   for (const size of sizes) {
-    entries.push({ size, buffer: await png(size) });
+    entries.push({ size, buffer: await pngFromSvg(appIconSvg(size), size) });
   }
   writeIco(entries, path.join(resourcesDir, 'icon.ico'));
 }
 
 async function main() {
   fs.mkdirSync(resourcesDir, { recursive: true });
-  fs.writeFileSync(path.join(resourcesDir, 'icon.svg'), iconSvg(1024));
-  fs.writeFileSync(path.join(resourcesDir, 'icon.png'), await png(1024));
+  fs.writeFileSync(path.join(resourcesDir, 'icon.svg'), appIconSvg(1024));
+  fs.writeFileSync(path.join(resourcesDir, 'icon.png'), await pngFromSvg(appIconSvg(1024), 1024));
+  fs.writeFileSync(path.join(resourcesDir, 'tray-icon.png'), await pngFromSvg(trayIconSvg(44), 44));
+  fs.writeFileSync(path.join(resourcesDir, 'tray-icon@2x.png'), await pngFromSvg(trayIconSvg(88), 88));
   await buildMacIcns();
   await buildIco();
   console.log('Icons generated in resources/');

@@ -35,6 +35,9 @@ jobs:
           - os: windows-latest
             platform: win
             args: --win --x64
+          - os: ubuntu-latest
+            platform: linux
+            args: --linux AppImage deb --x64
 
     steps:
       - name: Checkout
@@ -50,6 +53,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --ignore-scripts && npm rebuild sharp
+
+      - name: Install Linux packaging deps
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            fakeroot dpkg rpm libarchive-tools
 
       - name: Generate icons
         shell: bash
@@ -77,6 +87,8 @@ jobs:
             release/*.pkg
             release/*.zip
             release/*.exe
+            release/*.AppImage
+            release/*.deb
             release/*.yml
             release/*.blockmap
           if-no-files-found: error
@@ -112,6 +124,7 @@ jobs:
           | Intel Mac | 推荐 \`font-service-*-x64-mac.pkg\` |
           | 拖拽安装 | \`font-service-*-mac.dmg\` 或 \`.zip\`（首次启动会自动尝试去隔离） |
           | Windows 64 位 | \`font-service-setup-*.exe\` |
+          | Linux 64 位 | 推荐 \`font-service-*-x64-linux.AppImage\`；或 \`.deb\`（Debian/Ubuntu） |
 
           ## 使用说明
 
@@ -119,6 +132,7 @@ jobs:
 
           - 字体列表：\`http://localhost:43838/fonts\`
           - 健康检查：\`http://localhost:43838/health\`
+          - 控制面板：托盘图标 / Dock 打开
 
           可通过环境变量 \`FONT_SERVER_PORT\` 修改端口（默认 43838）。
 
@@ -126,6 +140,12 @@ jobs:
 
           - **PKG 安装包**：安装完成后会自动执行 \`xattr -cr\`，一般无需手动操作
           - **DMG 拖拽**：应用首次启动时会自动清除隔离属性；若仍无法打开，右键 → **打开** → **打开**（仅首次）
+
+          ### Linux
+
+          - **AppImage**：\`chmod +x font-service-*-x64-linux.AppImage && ./font-service-*-x64-linux.AppImage\`
+          - **deb**：\`sudo dpkg -i font-service-*-x64-linux.deb\`
+          - 托盘图标需要桌面环境支持 StatusNotifier / AppIndicator（GNOME 可能需扩展）
           EOF
 
       - name: Create GitHub Release

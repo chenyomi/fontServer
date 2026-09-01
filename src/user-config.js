@@ -30,10 +30,17 @@ function writeConfig(partial) {
 }
 
 function applyAutostart(enabled) {
-  app.setLoginItemSettings({
+  const settings = {
     openAtLogin: enabled,
     path: app.getPath("exe"),
-  });
+  };
+
+  // Linux：Electron 会写入 ~/.config/autostart/*.desktop
+  if (process.platform === "linux") {
+    settings.args = app.isPackaged ? [] : [path.resolve(__dirname, "..")];
+  }
+
+  app.setLoginItemSettings(settings);
   writeConfig({ openAtLogin: enabled });
 }
 

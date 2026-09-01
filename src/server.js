@@ -72,16 +72,23 @@ function getSystemFonts({ forceRefresh = false } = {}) {
     fonts.push(...scanFontsDir(systemDir, true, seen));
     fonts.push(...scanFontsDir(userDir, false, seen));
   } else {
+    // Linux / 其他 Unix
     const systemDirs = [
       "/usr/share/fonts",
+      "/usr/local/share/fonts",
+      "/usr/X11R6/lib/X11/fonts",
       "/usr/share/fonts/truetype",
       "/usr/share/fonts/opentype",
-      "/usr/local/share/fonts",
+      "/usr/share/fonts/TTF",
+      "/usr/share/fonts/OTF",
     ];
     const userDirs = [
       path.join(os.homedir(), ".fonts"),
       path.join(os.homedir(), ".local/share/fonts"),
     ];
+    if (process.env.XDG_DATA_HOME) {
+      userDirs.push(path.join(process.env.XDG_DATA_HOME, "fonts"));
+    }
     systemDirs.forEach((d) => fonts.push(...scanFontsDir(d, true, seen)));
     userDirs.forEach((d) => fonts.push(...scanFontsDir(d, false, seen)));
   }

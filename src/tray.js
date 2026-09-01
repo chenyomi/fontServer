@@ -10,9 +10,18 @@ function trayIconPath() {
   if (process.platform === "win32") {
     return path.join(__dirname, "..", "resources", "icon.ico");
   }
+  // macOS / Linux：白底黑字托盘图标
   const retina = path.join(__dirname, "..", "resources", "tray-icon@2x.png");
   const normal = path.join(__dirname, "..", "resources", "tray-icon.png");
-  return fs.existsSync(retina) ? retina : normal;
+  if (fs.existsSync(retina)) return retina;
+  if (fs.existsSync(normal)) return normal;
+  return path.join(__dirname, "..", "resources", "icon.png");
+}
+
+function trayIconSize() {
+  if (process.platform === "darwin") return 22;
+  if (process.platform === "linux") return 24;
+  return 16;
 }
 
 function buildMenu({ onOpenPanel, onToggleService, onQuit, serviceRunning = true }) {
@@ -65,15 +74,16 @@ function createTray(ctx) {
   }
 
   let image = nativeImage.createFromPath(trayIconPath());
-  if (process.platform === "darwin" && !image.isEmpty()) {
-    // 托盘专用图标 @2x(88px) → 22pt，与系统菜单栏尺寸一致
-    image = image.resize({ width: 22, height: 22, quality: "best" });
+  if (!image.isEmpty() && (process.platform === "darwin" || process.platform === "linux")) {
+    const size = trayIconSize();
+    image = image.resize({ width: size, height: size, quality: "best" });
   }
 
   tray = new Tray(image.isEmpty() ? nativeImage.createEmpty() : image);
   refreshTrayMenu(ctx);
 
-  if (process.platform === "darwin") {
+  // macOS / Linux：左键打开面板；Windows 用右键菜单
+  if (process.platform === "darwin" || process.platform === "linux") {
     tray.on("click", () => {
       if (ctx.onOpenPanel) ctx.onOpenPanel();
     });

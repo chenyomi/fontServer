@@ -1,6 +1,6 @@
 {
   "name": "font-service",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "本地字体 HTTP 服务，供设计工具读取系统字体",
   "author": "chenyomi <408550179@qq.com>",
   "main": "src/main.js",
@@ -11,7 +11,8 @@
     "subset:build": "esbuild vendor/web-font-subset/font.ts --bundle --platform=node --format=cjs --outfile=src/subset/engine.cjs --external:zlib --external:node:zlib",
     "build": "electron-builder",
     "build:win": "npm run icons && electron-builder --win --x64",
-    "build:mac": "npm run icons && electron-builder --mac dmg zip --arm64 --x64 && electron-builder --mac pkg --arm64 && electron-builder --mac pkg --x64"
+    "build:mac": "npm run icons && electron-builder --mac dmg zip --arm64 --x64 && electron-builder --mac pkg --arm64 && electron-builder --mac pkg --x64",
+    "build:linux": "npm run icons && electron-builder --linux AppImage deb --x64"
   },
   "dependencies": {
     "express": "^4.22.1"
@@ -88,6 +89,34 @@
       "createStartMenuShortcut": true,
       "shortcutName": "FontServer",
       "runAfterFinish": true
+    },
+    "linux": {
+      "icon": "resources/icon.png",
+      "category": "Utility",
+      "maintainer": "chenyomi <408550179@qq.com>",
+      "synopsis": "Local font HTTP service for design tools",
+      "description": "Lists system fonts and subsets them to woff2/ttf on demand for Scipixa and design tools.",
+      "desktop": {
+        "Name": "FontServer",
+        "Comment": "Local font HTTP service",
+        "Categories": "Utility;",
+        "StartupWMClass": "FontServer"
+      },
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${name}-${version}-${arch}-linux.${ext}"
     }
   }
 }

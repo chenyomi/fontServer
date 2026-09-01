@@ -132,6 +132,18 @@ function setAppMenu(lang) {
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
+        label: "File",
+        submenu: [{ role: "quit", label: text.menuQuit }],
+      },
+      {
+        label: text.menuEdit,
+        submenu: [
+          { role: "copy" },
+          { role: "paste" },
+          { role: "selectAll" },
+        ],
+      },
+      {
         label: text.menuHelp,
         submenu: [
           { label: text.menuAbout, click: () => showAbout(locale) },

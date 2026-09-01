@@ -15,6 +15,8 @@
 | Intel Mac | `font-service-*-x64-mac.pkg` | **推荐**，安装时自动去隔离 |
 | Mac 拖拽安装 | `font-service-*-mac.dmg` / `.zip` | 首次启动自动去隔离 |
 | Windows 64 位 | `font-service-setup-*.exe` | |
+| Linux 64 位 | `font-service-*-x64-linux.AppImage` | **推荐**，下载后 `chmod +x` 即可运行 |
+| Debian / Ubuntu | `font-service-*-x64-linux.deb` | `sudo dpkg -i …` |
 
 安装后默认在 `http://127.0.0.1:43838` 提供 API，开机自启。**打开应用会显示控制面板**（运行状态、开机自启、停止服务）；关闭窗口后仍在后台运行，可从菜单栏托盘再次打开。
 
@@ -25,6 +27,13 @@
 - **PKG**：安装完成后会自动 `xattr -cr`
 - **DMG**：首次启动会尝试清隔离；若仍不行，右键 → **打开**
 - 长期方案：Apple 开发者证书签名（参见 ERP 项目 README）
+
+### Linux
+
+- **AppImage**：`chmod +x font-service-*-x64-linux.AppImage && ./font-service-*-x64-linux.AppImage`
+- **deb**：`sudo dpkg -i font-service-*-x64-linux.deb`
+- 托盘依赖 StatusNotifier / AppIndicator；部分 GNOME 环境需安装对应扩展才能看到托盘图标
+- 开机自启写入 `~/.config/autostart/`
 
 ## 快速开始
 
@@ -119,6 +128,7 @@ npm run subset:build # 改 vendor/web-font-subset 后重建裁剪引擎
 npm run icons
 npm run build:mac   # dmg + zip + pkg（arm64 / x64）
 npm run build:win
+npm run build:linux # AppImage + deb（x64）
 ```
 
 ## 自动发布（GitHub Actions）

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FontServer 裁剪测试</title>
+  <style>
+    :root {
+      --bg: #f3f1ec;
+      --panel: #fffdf8;
+      --ink: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #0f766e;
+      --accent-ink: #ecfdf5;
+      --warn: #b45309;
+      --err: #b91c1c;
+      --preview-bg: #1c1917;
+      --preview-ink: #fafaf9;
+      --font-ui: "IBM Plex Sans", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #dbece8 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #efe6d6 0%, transparent 50%),
+        var(--bg);
+      font-family: var(--font-ui);
+    }
+
+    main {
+      width: min(960px, calc(100% - 2rem));
+      margin: 2rem auto 3rem;
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.75rem;
+      letter-spacing: -0.03em;
+    }
+    header p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      max-width: 40rem;
+      line-height: 1.5;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.1rem 1.2rem;
+      box-shadow: 0 10px 30px rgba(28, 25, 23, 0.04);
+    }
+
+    .grid {
+      display: grid;
+      gap: 0.9rem;
+      grid-template-columns: 1.2fr 0.8fr;
+    }
+    @media (max-width: 720px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    label {
+      display: grid;
+      gap: 0.35rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    input, select, textarea, button {
+      font: inherit;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.65rem 0.75rem;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea {
+      min-height: 7rem;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .seg button {
+      border: 0;
+      background: transparent;
+      padding: 0.45rem 0.9rem;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .seg button.active {
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+    .actions button.primary {
+      border: 0;
+      border-radius: 999px;
+      padding: 0.65rem 1.15rem;
+      background: var(--accent);
+      color: var(--accent-ink);
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .actions button.primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .actions button.ghost {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.65rem 1rem;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.6rem;
+    }
+    @media (max-width: 720px) {
+      .meta { grid-template-columns: 1fr 1fr; }
+    }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.7rem 0.8rem;
+      background: #fff;
+    }
+    .stat b {
+      display: block;
+      font-size: 1.05rem;
+      margin-top: 0.15rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat span { color: var(--muted); font-size: 0.8rem; }
+
+    .preview {
+      min-height: 220px;
+      border-radius: 12px;
+      padding: 1.25rem;
+      background: var(--preview-bg);
+      color: var(--preview-ink);
+      display: grid;
+      align-content: center;
+      gap: 0.75rem;
+    }
+    .preview .sample {
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      line-height: 1.35;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .preview .hint {
+      color: #a8a29e;
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+    }
+
+    .log {
+      margin: 0;
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      background: #fafaf9;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 10rem;
+      overflow: auto;
+    }
+    .log.err { color: var(--err); border-color: #fecaca; background: #fff1f2; }
+    .log.warn { color: var(--warn); }
+
+    .font-list-hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>FontServer 裁剪测试</h1>
+      <p>从本机字体按文字生成子集。输入文字、切换字体或格式会自动预览，并显示体积与耗时。</p>
+    </header>
+
+    <section class="panel grid">
+      <div style="display:grid;gap:0.9rem">
+        <label>
+          搜索 / 选择字体
+          <input id="fontFilter" type="search" placeholder="输入名称过滤，例如 Arial / 思源" />
+        </label>
+        <label>
+          字体列表
+          <select id="fontSelect" size="10"></select>
+        </label>
+        <div class="font-list-hint" id="fontCount">加载字体中…</div>
+      </div>
+
+      <div style="display:grid;gap:0.9rem;align-content:start">
+        <label>
+          要裁剪的文字
+          <textarea id="textInput">你好世界 · FontServer 按需裁剪</textarea>
+        </label>
+        <div>
+          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.35rem">输出格式</div>
+          <div class="seg" id="outTypeSeg">
+            <button type="button" data-value="woff2" class="active">woff2</button>
+            <button type="button" data-value="ttf">ttf</button>
+          </div>
+        </div>
+        <div class="row actions">
+          <button class="ghost" id="refreshBtn" type="button">刷新字体列表</button>
+          <span class="font-list-hint">输入文字 / 换字体 / 改格式会自动预览</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="meta" id="stats">
+        <div class="stat"><span>大小</span><b id="statSize">—</b></div>
+        <div class="stat"><span>总耗时</span><b id="statTotal">—</b></div>
+        <div class="stat"><span>裁剪耗时</span><b id="statSubset">—</b></div>
+        <div class="stat"><span>缓存</span><b id="statCache">—</b></div>
+      </div>
+      <div class="preview" style="margin-top:1rem">
+        <div class="sample" id="previewSample">选择字体后开始输入…</div>
+        <div class="hint" id="previewHint">preview family: SubsetPreview · 自动更新</div>
+      </div>
+      <pre class="log" id="log">等待输入…</pre>
+    </section>
+  </main>
+
+  <script>
+    const API = location.origin;
+    const FAMILY = "SubsetPreview";
+    const DEBOUNCE_MS = 220;
+    let fonts = [];
+    let outType = "woff2";
+    let currentObjectUrl = null;
+    let currentFace = null;
+    let debounceTimer = null;
+    let requestSeq = 0;
+    let lastKey = "";
+
+    const el = (id) => document.getElementById(id);
+    const fontFilter = el("fontFilter");
+    const fontSelect = el("fontSelect");
+    const fontCount = el("fontCount");
+    const textInput = el("textInput");
+    const refreshBtn = el("refreshBtn");
+    const logEl = el("log");
+    const previewSample = el("previewSample");
+    const previewHint = el("previewHint");
+
+    function setLog(msg, kind) {
+      logEl.textContent = msg;
+      logEl.className = "log" + (kind ? " " + kind : "");
+    }
+
+    function formatBytes(n) {
+      if (n < 1024) return n + " B";
+      if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+      return (n / 1024 / 1024).toFixed(2) + " MB";
+    }
+
+    function schedulePreview(immediate) {
+      clearTimeout(debounceTimer);
+      if (immediate) {
+        runSubset();
+        return;
+      }
+      debounceTimer = setTimeout(runSubset, DEBOUNCE_MS);
+    }
+
+    function renderFontOptions() {
+      const q = fontFilter.value.trim().toLowerCase();
+      const list = fonts.filter((f) => {
+        if (!q) return true;
+        return (
+          f.name.toLowerCase().includes(q) ||
+          f.path.toLowerCase().includes(q) ||
+          (f.ext || "").toLowerCase().includes(q)
+        );
+      });
+      const prev = fontSelect.value;
+      fontSelect.innerHTML = "";
+      for (const f of list) {
+        const opt = document.createElement("option");
+        opt.value = f.path;
+        const tag = (f.ext || "").toLowerCase();
+        opt.textContent = `${f.name}  ·  .${tag}${f.system ? "" : " · 用户"}`;
+        fontSelect.appendChild(opt);
+      }
+      if ([...fontSelect.options].some((o) => o.value === prev)) {
+        fontSelect.value = prev;
+      } else if (fontSelect.options.length) {
+        fontSelect.selectedIndex = 0;
+      }
+      fontCount.textContent = `共 ${fonts.length} 个可用字体（已排除 .ttc/.otc），当前显示 ${list.length} 个`;
+    }
+
+    async function loadFonts(force) {
+      fontCount.textContent = "加载字体中…";
+      const url = force ? `${API}/fonts?refresh=1` : `${API}/fonts`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      fonts = data.fonts || [];
+      fonts.sort((a, b) => a.name.localeCompare(b.name, "zh"));
+      renderFontOptions();
+      schedulePreview(true);
+    }
+
+    async function cleanupFace() {
+      if (currentFace) {
+        try { document.fonts.delete(currentFace); } catch (_) {}
+        currentFace = null;
+      }
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = null;
+      }
+    }
+
+    async function runSubset() {
+      const fontPath = fontSelect.value;
+      const text = textInput.value;
+      if (!fontPath) {
+        setLog("请先选择字体", "err");
+        return;
+      }
+      if (!text.trim()) {
+        setLog("请输入要裁剪的文字", "warn");
+        previewSample.textContent = "";
+        return;
+      }
+
+      const key = `${fontPath}|${outType}|${text}`;
+      if (key === lastKey) return;
+      const seq = ++requestSeq;
+      setLog("请求中…");
+      const qs = new URLSearchParams({
+        path: fontPath,
+        text,
+        outType,
+      });
+      const url = `${API}/subset?${qs.toString()}`;
+
+      try {
+        const res = await fetch(url);
+        if (seq !== requestSeq) return;
+
+        const cache = res.headers.get("X-Cache") || "—";
+        const tFind = res.headers.get("X-Timing-Find") || "—";
+        const tRead = res.headers.get("X-Timing-Read") || "—";
+        const tSubset = res.headers.get("X-Timing-Subset") || "—";
+        const tTotal = res.headers.get("X-Timing-Total") || "—";
+
+        if (!res.ok) {
+          let errText = res.statusText;
+          try {
+            const j = await res.json();
+            errText = j.error || errText;
+          } catch (_) {}
+          el("statSize").textContent = "—";
+          el("statTotal").textContent = tTotal === "—" ? "—" : tTotal + " ms";
+          el("statSubset").textContent = "—";
+          el("statCache").textContent = cache;
+          setLog(`HTTP ${res.status}: ${errText}\n${url}`, "err");
+          return;
+        }
+
+        const buf = await res.arrayBuffer();
+        if (seq !== requestSeq) return;
+
+        await cleanupFace();
+        const blob = new Blob([buf], { type: res.headers.get("Content-Type") || "font/woff2" });
+        currentObjectUrl = URL.createObjectURL(blob);
+        const face = new FontFace(FAMILY, `url(${currentObjectUrl})`);
+        currentFace = await face.load();
+        if (seq !== requestSeq) return;
+        document.fonts.add(currentFace);
+
+        previewSample.style.fontFamily = `"${FAMILY}", sans-serif`;
+        previewSample.textContent = text;
+        previewHint.textContent = `family: ${FAMILY} · ${outType} · ${formatBytes(buf.byteLength)} · 自动更新`;
+
+        el("statSize").textContent = formatBytes(buf.byteLength);
+        el("statTotal").textContent = `${tTotal} ms`;
+        el("statSubset").textContent = `${tSubset} ms`;
+        el("statCache").textContent = cache;
+        lastKey = key;
+
+        setLog(
+          [
+            `OK ${res.status}  ${formatBytes(buf.byteLength)}  cache=${cache}`,
+            `timing find=${tFind}ms read=${tRead}ms subset=${tSubset}ms total=${tTotal}ms`,
+            url,
+          ].join("\n")
+        );
+      } catch (err) {
+        if (seq !== requestSeq) return;
+        setLog(String(err && err.message ? err.message : err), "err");
+      }
+    }
+
+    el("outTypeSeg").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-value]");
+      if (!btn) return;
+      outType = btn.dataset.value;
+      for (const b of el("outTypeSeg").querySelectorAll("button")) {
+        b.classList.toggle("active", b === btn);
+      }
+      schedulePreview(true);
+    });
+
+    fontFilter.addEventListener("input", renderFontOptions);
+    fontSelect.addEventListener("change", () => schedulePreview(true));
+    textInput.addEventListener("input", () => schedulePreview(false));
+    refreshBtn.addEventListener("click", () => {
+      loadFonts(true).catch((err) => setLog(String(err), "err"));
+    });
+
+    loadFonts(false).catch((err) => {
+      fontCount.textContent = "字体列表加载失败";
+      setLog(String(err), "err");
+    });
+  </script>
+</body>
+</html>

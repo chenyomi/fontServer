@@ -23,6 +23,10 @@ const ABOUT_I18N = {
     menuQuit: "退出 FontServer",
     menuHelp: "帮助",
     menuEdit: "编辑",
+    menuFile: "文件",
+    menuHide: "隐藏 FontServer",
+    menuHideOthers: "隐藏其他",
+    menuShowAll: "显示全部",
   },
   en: {
     credits: `Local font HTTP service. Reads installed system fonts and subsets them to woff2/ttf on demand.
@@ -39,6 +43,10 @@ Author: ${AUTHOR}`,
     menuQuit: "Quit FontServer",
     menuHelp: "Help",
     menuEdit: "Edit",
+    menuFile: "File",
+    menuHide: "Hide FontServer",
+    menuHideOthers: "Hide Others",
+    menuShowAll: "Show All",
   },
 };
 
@@ -109,9 +117,9 @@ function setAppMenu(lang) {
               click: () => shell.openExternal(WEBSITE),
             },
             { type: "separator" },
-            { role: "hide" },
-            { role: "hideOthers" },
-            { role: "unhide" },
+            { role: "hide", label: text.menuHide },
+            { role: "hideOthers", label: text.menuHideOthers },
+            { role: "unhide", label: text.menuShowAll },
             { type: "separator" },
             { role: "quit", label: text.menuQuit },
           ],
@@ -132,7 +140,7 @@ function setAppMenu(lang) {
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
-        label: "File",
+        label: text.menuFile,
         submenu: [{ role: "quit", label: text.menuQuit }],
       },
       {

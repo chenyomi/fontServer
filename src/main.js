@@ -120,7 +120,7 @@ if (!gotLock) {
 
   function syncUi() {
     const state = getAppState();
-    refreshTrayMenu({ ...trayCtx, serviceRunning: state.running });
+    refreshTrayMenu({ ...trayCtx, serviceRunning: state.running, language: state.language });
     configureAboutPanel(state.language);
     setAppMenu(state.language);
 
@@ -203,7 +203,7 @@ if (!gotLock) {
 
     server.start(app, PORT);
 
-    createTray(trayCtx);
+    createTray({ ...trayCtx, serviceRunning: server.isRunning(), language: config.language });
     setAppMenu(config.language);
 
     createPanelWindow({

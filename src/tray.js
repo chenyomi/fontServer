@@ -1,16 +1,46 @@
 const path = require("path");
 const fs = require("fs");
 const { Tray, Menu, nativeImage } = require("electron");
-const { applyAutostart, isAutostartEnabled } = require("./user-config");
+const { applyAutostart, isAutostartEnabled, readConfig } = require("./user-config");
 
 /** @type {Tray | null} */
 let tray = null;
+
+const TRAY_I18N = {
+  zh: {
+    running: "FontServer 运行中",
+    stopped: "FontServer 已停止",
+    openPanel: "打开控制面板",
+    stopService: "停止服务",
+    startService: "启动服务",
+    openAtLogin: "开机时启动",
+    quit: "退出 FontServer",
+    quitShort: "退出",
+  },
+  en: {
+    running: "FontServer Running",
+    stopped: "FontServer Stopped",
+    openPanel: "Open Control Panel",
+    stopService: "Stop Service",
+    startService: "Start Service",
+    openAtLogin: "Open at Login",
+    quit: "Quit FontServer",
+    quitShort: "Quit",
+  },
+};
+
+function trayStrings(lang) {
+  return TRAY_I18N[lang === "zh" ? "zh" : "en"];
+}
+
+function resolveLang(ctx) {
+  return ctx.language || readConfig().language || "en";
+}
 
 function trayIconPath() {
   if (process.platform === "win32") {
     return path.join(__dirname, "..", "resources", "icon.ico");
   }
-  // macOS / Linux：白底黑字托盘图标
   const retina = path.join(__dirname, "..", "resources", "tray-icon@2x.png");
   const normal = path.join(__dirname, "..", "resources", "tray-icon.png");
   if (fs.existsSync(retina)) return retina;
@@ -24,37 +54,43 @@ function trayIconSize() {
   return 16;
 }
 
-function buildMenu({ onOpenPanel, onToggleService, onQuit, serviceRunning = true }) {
+function buildMenu(ctx) {
+  const {
+    onOpenPanel,
+    onToggleService,
+    onQuit,
+    serviceRunning = true,
+  } = ctx;
+  const t = trayStrings(resolveLang(ctx));
   const autostart = isAutostartEnabled();
-  const statusLabel = serviceRunning ? "FontServer 运行中" : "FontServer 已停止";
 
   return Menu.buildFromTemplate([
-    { label: statusLabel, enabled: false },
+    { label: serviceRunning ? t.running : t.stopped, enabled: false },
     {
-      label: "打开控制面板",
+      label: t.openPanel,
       click: () => {
         if (onOpenPanel) onOpenPanel();
       },
     },
     { type: "separator" },
     {
-      label: serviceRunning ? "停止服务" : "启动服务",
+      label: serviceRunning ? t.stopService : t.startService,
       click: () => {
         if (onToggleService) onToggleService();
       },
     },
     {
-      label: "开机时启动",
+      label: t.openAtLogin,
       type: "checkbox",
       checked: autostart,
       click: (item) => {
         applyAutostart(item.checked);
-        refreshTrayMenu({ onOpenPanel, onToggleService, onQuit, serviceRunning });
+        refreshTrayMenu(ctx);
       },
     },
     { type: "separator" },
     {
-      label: process.platform === "darwin" ? "退出 FontServer" : "退出",
+      label: process.platform === "darwin" ? t.quit : t.quitShort,
       click: onQuit,
     },
   ]);
@@ -62,9 +98,10 @@ function buildMenu({ onOpenPanel, onToggleService, onQuit, serviceRunning = true
 
 function refreshTrayMenu(ctx) {
   if (!tray) return;
-  const running = ctx.serviceRunning !== false;
-  tray.setContextMenu(buildMenu({ ...ctx, serviceRunning: running }));
-  tray.setToolTip(running ? "FontServer 运行中" : "FontServer 已停止");
+  const next = { ...ctx, serviceRunning: ctx.serviceRunning !== false };
+  const t = trayStrings(resolveLang(next));
+  tray.setContextMenu(buildMenu(next));
+  tray.setToolTip(next.serviceRunning ? t.running : t.stopped);
 }
 
 function createTray(ctx) {
@@ -82,7 +119,6 @@ function createTray(ctx) {
   tray = new Tray(image.isEmpty() ? nativeImage.createEmpty() : image);
   refreshTrayMenu(ctx);
 
-  // macOS / Linux：左键打开面板；Windows 用右键菜单
   if (process.platform === "darwin" || process.platform === "linux") {
     tray.on("click", () => {
       if (ctx.onOpenPanel) ctx.onOpenPanel();

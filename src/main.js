@@ -43,6 +43,7 @@ if (!gotLock) {
       running: server.isRunning(),
       version: pkg.version,
       port: PORT,
+      platform: process.platform,
       autostart: isAutostartEnabled(),
       language: config.language,
       appearance: config.appearance,

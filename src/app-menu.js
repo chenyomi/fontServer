@@ -13,7 +13,9 @@ const ABOUT_I18N = {
 
 专为 Scipixa（${WEBSITE_LABEL}）及设计工具提供系统字体访问能力，无需打包完整字体文件。
 
-作者：${AUTHOR}`,
+作者：${AUTHOR}
+
+裁剪能力参考：web-font、fonteditor-core`,
     versionLabel: "版本",
     dialogTitle: "关于 FontServer",
     btnOk: "好的",
@@ -33,7 +35,9 @@ const ABOUT_I18N = {
 
 Built for Scipixa (${WEBSITE_LABEL}) and design tools — access system fonts without shipping full font files.
 
-Author: ${AUTHOR}`,
+Author: ${AUTHOR}
+
+Subset engine based on web-font and fonteditor-core`,
     versionLabel: "Version",
     dialogTitle: "About FontServer",
     btnOk: "OK",

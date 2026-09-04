@@ -12,7 +12,7 @@ function panelBackgroundColor() {
 }
 
 const PANEL_WIDTH = 360;
-const PANEL_HEIGHT = 680;
+const PANEL_HEIGHT = process.platform === "win32" ? 720 : 680;
 
 function applyPanelSize(win) {
   if (!win || win.isDestroyed()) return;

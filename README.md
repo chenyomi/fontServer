@@ -67,7 +67,7 @@ CSS 直链子集（推荐，二进制，不要默认 base64）：
 
 ### `GET /subset`
 
-按 `text` 生成本机字体子集。裁剪引擎来自 [web-font](https://github.com/2234839/web-font)。
+按 `text` 生成本机字体子集。裁剪能力参考并基于 [web-font](https://github.com/2234839/web-font) 与 [fonteditor-core](https://github.com/kekee000/fonteditor-core)。
 
 | 参数 | 说明 |
 | --- | --- |
@@ -140,3 +140,14 @@ npm run build:linux # AppImage + deb（x64）
 3. 安装包上传到 GitHub Releases
 
 手动重打：**Actions → Release → Run workflow**，填写已有 tag。
+
+## 致谢
+
+FontServer 的按需字体裁剪能力参考并使用了以下开源项目，感谢作者与贡献者：
+
+| 项目 | 说明 |
+| --- | --- |
+| [web-font](https://github.com/2234839/web-font) | 字体子集裁剪思路与相关实现参考 |
+| [fonteditor-core](https://github.com/kekee000/fonteditor-core) | 字体解析 / 子集化核心库（vendor 内嵌） |
+
+源码位于仓库 `vendor/`，构建后打进 `src/subset/engine.cjs`。请遵守各自上游项目的开源协议。

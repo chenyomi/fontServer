@@ -1,6 +1,6 @@
 {
   "name": "font-service",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "本地字体 HTTP 服务，供设计工具读取系统字体",
   "author": "chenyomi <408550179@qq.com>",
   "main": "src/main.js",
